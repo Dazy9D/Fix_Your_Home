@@ -1,5 +1,6 @@
 <?php
 
+// app/Models/Customer.php
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -10,10 +11,10 @@ class Customer extends Model
     protected $primaryKey = 'customer_id';
     public $timestamps = false;
 
-    protected $fillable = [
-        'customer_id',
-        'name',
-        'email',
-        'phone',
-    ];
+    protected $fillable = ['customer_id', 'name', 'email', 'phone'];
+
+    public function auth()
+    {
+        return $this->belongsTo(AuthAccount::class, 'customer_id');
+    }
 }

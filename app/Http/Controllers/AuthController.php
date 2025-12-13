@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuthAccount;
+use App\Models\Customer;
 use App\Models\User;
 use App\Models\Worker;
 use App\Models\Service;
@@ -27,8 +28,8 @@ class AuthController extends Controller
             'type'     => 'user',
         ]);
 
-        User::create([
-            'user_id' => $auth->id,
+        Customer::create([
+            'customer_id' => $auth->id,
             'name'    => $data['name'],
             'email'   => $data['email'],
             'phone'   => $data['phone'],
