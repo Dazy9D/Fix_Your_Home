@@ -269,7 +269,7 @@ const DashboardWorker = () => {
               </h1>
               <p className="max-w-2xl text-lg leading-relaxed text-slate-600">
                 {worker?.services && worker.services.length > 0
-                  ? `I specialize in ${worker.services.map(s => s.name).join(', ')}. I'm known for being punctual, respectful, and detail-oriented.`
+                  ? `I am an ${worker.services.map(s => s.name).join(', ')}. I'm known for being punctual, respectful, and detail-oriented.`
                   : 'I am a professional worker ready to help with your needs.'}
               </p>
             </div>
