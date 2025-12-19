@@ -14,6 +14,9 @@ class ServiceController extends Controller
             'Cleaner',
             'Plumber',
             'Babysitter',
+            'Painter',
+            'Carpenter',
+            'Gardener',
         ]);
     }
 }
