@@ -277,4 +277,53 @@ class UserController extends Controller
             'payment' => $payment,
         ]);
     }
+
+    /**
+     * Submit a rating for a completed job request
+     */
+    public function rateJobRequest(Request $request, int $jobRequestId)
+    {
+        $auth = $request->user();
+        if ($auth->type !== 'user') {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $customer = Customer::where('customer_id', $auth->id)->first();
+        if (!$customer) {
+            return response()->json(['message' => 'Customer profile not found'], 404);
+        }
+
+        $job = JobRequest::where('id', $jobRequestId)
+            ->where('customer_id', $customer->customer_id)
+            ->with('worker')
+            ->first();
+
+        if (!$job) {
+            return response()->json(['message' => 'Job not found'], 404);
+        }
+
+        if ($job->status !== 'completed') {
+            return response()->json(['message' => 'Only completed jobs can be rated'], 422);
+        }
+
+        if ($job->rating !== null) {
+            return response()->json(['message' => 'Job already rated'], 409);
+        }
+
+        $data = $request->validate([
+            'rating' => 'required|integer|min:1|max:5',
+        ]);
+
+        $job->rating = $data['rating'];
+        $job->rating_at = now();
+        $job->save();
+
+        $job->load(['worker', 'customer']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Rating submitted',
+            'data' => $job,
+        ]);
+    }
 }

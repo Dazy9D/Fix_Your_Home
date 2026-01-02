@@ -38,6 +38,9 @@ const api = {
   acceptWorkerApplication: (jobRequestId, applicationId) => axios.post(`/api/user/job-requests/${jobRequestId}/applications/${applicationId}/accept`),
   deleteJobRequest: (jobRequestId) => axios.delete(`/api/user/job-requests/${jobRequestId}`),
   getNearestWorkers: (params = {}) => axios.get('/api/workers/nearest', { params }),
+
+  // Ratings
+  rateJob: (jobRequestId, data) => axios.post(`/api/user/job-requests/${jobRequestId}/rating`, data),
 };
 
 export default api;

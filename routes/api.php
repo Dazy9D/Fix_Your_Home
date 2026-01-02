@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/job-requests', [UserController::class, 'createJobRequest']);
         Route::post('/job-requests/{jobRequestId}/applications/{applicationId}/accept', [UserController::class, 'acceptWorkerApplication']);
         Route::delete('/job-requests/{jobRequestId}', [UserController::class, 'deleteJobRequest']);
+        Route::post('/job-requests/{jobRequestId}/rating', [UserController::class, 'rateJobRequest']);
     });
 
     // Nearest workers (for authenticated users)

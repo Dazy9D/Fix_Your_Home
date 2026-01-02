@@ -35,6 +35,11 @@ const DashboardUser = () => {
   const [multiServiceLoading, setMultiServiceLoading] = useState(false);
   const [multiServiceError, setMultiServiceError] = useState('');
 
+  // Rating modal state
+  const [ratingModalJob, setRatingModalJob] = useState(null)
+  const [ratingValue, setRatingValue] = useState(0)
+  const [ratingSubmitting, setRatingSubmitting] = useState(false)
+
 
 
   const handleLogout = async () => {
@@ -478,10 +483,88 @@ const DashboardUser = () => {
         <section className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold text-slate-900">Recent Requests</h2>
+              <h2 className="text-lg font-semibold text-slate-900">Recommended Worker</h2>
+              <p className="text-xs text-slate-500">
+                Top 10 workers this month{selectedSkill ? ` for "${selectedSkill}"` : ''}.
+              </p>
               <button className="text-sm font-semibold text-sky-600 hover:underline">View all</button>
             </div>
-            <div className="mt-4 space-y-4">
+            <div className="mt-4 space-y-3">
+                {loading || workersLoading ? (
+                  <div className="text-center py-4 text-slate-500 text-sm">Loading...</div>
+                ) : workers.length === 0 ? (
+                  <div className="text-center py-4 text-slate-500 text-sm">No workers found</div>
+                ) : (
+                  workers.map((worker) => (
+                    <div
+                      key={worker.id}
+                      onClick={() => openWorkerProfile(worker)}
+                      className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 transition hover:border-sky-300 hover:bg-sky-50"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">{worker.name || 'Unknown'}</p>
+                        <p className="text-xs text-slate-500">
+                          {worker.services?.slice(0, 2).map(s => s.name).join(', ') || 'Worker'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500">{worker.services?.length || 0} services</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              {workers.length > 0 && (
+                <button
+                  onClick={() => {
+                    setSelectedWorker(workers[0])
+                    setShowWorkerProfile(true)
+                  }}
+                  className="mt-4 w-full rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-600"
+                >
+                  Book a worker
+                </button>
+              )}
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-semibold text-slate-800">Mutli Service Booking</h2>
+                <span className="text-xs text-slate-500">{multiServiceWorkers.length} worker(s)</span>
+              </div>
+
+              {multiServiceLoading ? (
+                <p className="text-sm text-slate-500">Loading workers...</p>
+              ) : multiServiceWorkers.length === 0 ? (
+                <p className="text-sm text-slate-500">No workers offering multiple services yet.</p>
+              ) : (
+                <div className="grid md:grid-cols-2 gap-3">
+                  {multiServiceWorkers.map((worker) => (
+                    <button
+                      key={worker.worker_id}
+                      type="button"
+                      onClick={() => handleSelectWorker(worker)}
+                      className={`text-left border rounded-xl p-3 hover:border-emerald-400 transition ${selectedWorker && selectedWorker.worker_id === worker.worker_id
+                        ? 'border-emerald-500 bg-emerald-50'
+                        : 'border-slate-200 bg-white'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-semibold text-slate-800">{worker.name || 'Unknown'}</span>
+                        <span className="text-xs text-slate-500">{worker.services?.length || 0} services</span>
+                      </div>
+                      <p className="text-xs text-slate-500">{worker.services?.slice(0, 3).map((s) => s.name).join(', ') || '—'}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+              <h2 className="text-lg font-semibold text-slate-900">Recent requests</h2>
+              
+              <div className="mt-4 space-y-4">
               {loading ? (
                 <div className="text-center py-8 text-slate-500">Loading...</div>
               ) : jobRequests.length === 0 ? (
@@ -538,6 +621,24 @@ const DashboardUser = () => {
                           View Worker
                         </button>
                       )}
+
+                      {/* Rating action for completed jobs */}
+                      {req.status === 'completed' && (
+                        req.rating ? (
+                          <div className="text-xs text-slate-700">{'★'.repeat(req.rating)}{'☆'.repeat(5 - (req.rating || 0))} <span className="ml-1 text-[11px] text-slate-500">Rated</span></div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setRatingModalJob(req)
+                              setRatingValue(0)
+                            }}
+                            className="rounded-full bg-sky-500 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-600"
+                          >
+                            Give Rating
+                          </button>
+                        )
+                      )}
                       {req.worker_id && req.status === 'pending' && (
                         <span className="text-xs text-amber-600 font-semibold">
                           Waiting for worker to accept
@@ -556,53 +657,10 @@ const DashboardUser = () => {
                 ))
               )}
             </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900">Recommended Workers</h2>
-              <p className="text-xs text-slate-500">
-                Top 10 workers this month{selectedSkill ? ` for "${selectedSkill}"` : ''}.
-              </p>
-              <div className="mt-4 space-y-3">
-                {loading || workersLoading ? (
-                  <div className="text-center py-4 text-slate-500 text-sm">Loading...</div>
-                ) : workers.length === 0 ? (
-                  <div className="text-center py-4 text-slate-500 text-sm">No workers found</div>
-                ) : (
-                  workers.map((worker) => (
-                    <div
-                      key={worker.id}
-                      onClick={() => openWorkerProfile(worker)}
-                      className="flex cursor-pointer items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 transition hover:border-sky-300 hover:bg-sky-50"
-                    >
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900">{worker.name || 'Unknown'}</p>
-                        <p className="text-xs text-slate-500">
-                          {worker.services?.slice(0, 2).map(s => s.name).join(', ') || 'Worker'}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-slate-500">{worker.services?.length || 0} services</p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              {workers.length > 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedWorker(workers[0])
-                    setShowWorkerProfile(true)
-                  }}
-                  className="mt-4 w-full rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-emerald-600"
-                >
-                  Book a worker
-                </button>
-              )}
             </div>
 
 
+            {false && (
             <section className="bg-white rounded-2xl shadow-md p-5">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-slate-800">
@@ -647,6 +705,7 @@ const DashboardUser = () => {
                 </div>
               )}
             </section>
+          )}
           </div>
         </section>
 
@@ -697,18 +756,40 @@ const DashboardUser = () => {
                       {selectedWorker.job_requests.map((job) => (
                         <div key={job.id} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
                           <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold text-slate-900">{job.title}</p>
-                            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 capitalize">
-                              {job.status}
-                            </span>
+                            <div>
+                              <p className="text-xs font-semibold text-slate-900">{job.title}</p>
+                              <p className="text-[11px] text-slate-500">{formatPrice(job.final_price || job.budget)} · {job.completed_at ? formatDate(job.completed_at) : 'Ongoing'}</p>
+                            </div>
+
+                            <div className="text-right flex flex-col items-end gap-2">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 capitalize">{job.status}</span>
+
+                              {/* Rating actions for completed jobs */}
+                              {job.status === 'completed' && (
+                                job.rating ? (
+                                  <div className="text-xs text-slate-700">
+                                    {'★'.repeat(job.rating)}{'☆'.repeat(5 - job.rating)} <span className="ml-1 text-[11px] text-slate-500">Rated</span>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setRatingModalJob(job)
+                                      setRatingValue(0)
+                                    }}
+                                    className="rounded-full bg-sky-500 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-600"
+                                  >
+                                    Give Rating
+                                  </button>
+                                )
+                              )}
+
+                            </div>
                           </div>
+
                           {job.customer && (
                             <p className="mt-1 text-[11px] text-slate-500">For: {job.customer.name}</p>
                           )}
-                          <p className="mt-1 text-[11px] text-slate-500">
-                            {formatPrice(job.final_price || job.budget)} ·{' '}
-                            {job.completed_at ? formatDate(job.completed_at) : 'Ongoing'}
-                          </p>
                         </div>
                       ))}
                     </div>
@@ -737,6 +818,82 @@ const DashboardUser = () => {
             </div>
           </div>
         )}
+
+      {/* Rating Modal */}
+      {ratingModalJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => !ratingSubmitting && setRatingModalJob(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-slate-900">Rate "{ratingModalJob.title}"</h2>
+              <button
+                onClick={() => !ratingSubmitting && setRatingModalJob(null)}
+                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-600 mb-4">Select a rating between 1 and 5 stars. Ratings cannot be changed once submitted.</p>
+
+            <div className="flex items-center gap-2 mb-4">
+              {[1,2,3,4,5].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRatingValue(n)}
+                  className={`text-3xl ${ratingValue >= n ? 'text-amber-400' : 'text-slate-300'}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={async () => {
+                  if (ratingValue < 1) {
+                    alert('Please select a rating before submitting')
+                    return
+                  }
+                  setRatingSubmitting(true)
+                  try {
+                    await api.rateJob(ratingModalJob.id, { rating: ratingValue })
+
+                    // Update local state: mark job as rated so it cannot be rated again
+                    if (selectedWorker) {
+                      const updated = { ...selectedWorker }
+                      updated.job_requests = (updated.job_requests || []).map((j) => j.id === ratingModalJob.id ? { ...j, rating: ratingValue } : j)
+                      setSelectedWorker(updated)
+                    }
+
+                    // Also refresh job requests list (optional)
+                    await fetchData()
+
+                    setRatingModalJob(null)
+                    alert('Rating submitted — thank you!')
+                  } catch (err) {
+                    console.error('Error submitting rating:', err)
+                    alert(err.response?.data?.message || 'Failed to submit rating')
+                  } finally {
+                    setRatingSubmitting(false)
+                  }
+                }}
+                disabled={ratingSubmitting}
+                className="flex-1 rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-600 disabled:opacity-50"
+              >
+                {ratingSubmitting ? 'Submitting...' : 'Submit Rating'}
+              </button>
+
+              <button
+                onClick={() => !ratingSubmitting && setRatingModalJob(null)}
+                className="rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
         {/* Booking Form Modal */}
         {showBookingForm && (
