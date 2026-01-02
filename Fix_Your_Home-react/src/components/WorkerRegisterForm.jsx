@@ -139,7 +139,7 @@ export default function WorkerRegisterForm() {
         />
       </div>
 
-      <div style={styles.field}>
+      {/* <div style={styles.field}>
         <label style={styles.label} htmlFor="photo">
           Photo
         </label>
@@ -150,7 +150,7 @@ export default function WorkerRegisterForm() {
           onChange={(e) => setPhoto(e.target.files[0] || null)}
           style={styles.fileInput}
         />
-      </div>
+      </div> */}
 
       <div style={styles.field}>
         <span style={styles.label}>Services</span>
