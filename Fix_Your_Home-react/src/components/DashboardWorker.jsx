@@ -190,6 +190,25 @@ const DashboardWorker = () => {
     return price ? `$${parseFloat(price).toFixed(2)}` : 'N/A'
   }
 
+  // Compute average rating from job requests (fallback to worker.avg_rating if provided)
+  const computeAverageRating = () => {
+    if (!worker) return null
+    if (typeof worker.avg_rating === 'number') return Math.round(worker.avg_rating * 10) / 10
+    const ratings = (worker.job_requests || []).map(j => j.rating).filter(r => typeof r === 'number' && r > 0)
+    if (ratings.length === 0) return null
+    const sum = ratings.reduce((a, b) => a + b, 0)
+    return Math.round((sum / ratings.length) * 10) / 10
+  }
+
+  const ratingCount = () => {
+    if (!worker) return 0
+    if (typeof worker.total_ratings === 'number') return worker.total_ratings
+    return (worker.job_requests || []).filter(j => typeof j.rating === 'number' && j.rating > 0).length
+  }
+
+  const avgRating = computeAverageRating()
+  const ratingsCount = ratingCount()
+
   const stats = worker
     ? [
         {
@@ -199,22 +218,15 @@ const DashboardWorker = () => {
           accent: 'text-sky-600',
         },
         {
-          label: 'Email',
-          value: worker.email ? worker.email.substring(0, 15) + '...' : 'N/A',
-          detail: 'Contact email',
-          accent: 'text-emerald-600',
-        },
-        {
-          label: 'Phone',
-          value: worker.phone || 'N/A',
-          detail: 'Contact phone',
-          accent: 'text-amber-500',
+          label: 'Rating',
+          value: avgRating !== null ? `${avgRating} ★` : 'N/A',
+          detail: avgRating !== null ? `${ratingsCount} ratings` : 'No ratings yet',
+          accent: 'text-yellow-500',
         },
       ]
     : [
         { label: 'Services', value: '0', detail: 'Loading...', accent: 'text-sky-600' },
-        { label: 'Email', value: 'Loading...', detail: 'Loading...', accent: 'text-emerald-600' },
-        { label: 'Phone', value: 'Loading...', detail: 'Loading...', accent: 'text-amber-500' },
+        { label: 'Rating', value: 'Loading...', detail: 'Loading...', accent: 'text-yellow-500' },
       ]
 
   return (
@@ -305,7 +317,7 @@ const DashboardWorker = () => {
           </div>
         </section>
 
-        <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <section className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2">
           {stats.map((stat) => (
             <div
               key={stat.label}
@@ -315,6 +327,9 @@ const DashboardWorker = () => {
                 {stat.label}
               </span>
               <p className={`mt-4 text-3xl font-bold ${stat.accent}`}>{stat.value}</p>
+              {stat.label === 'Services' && (
+                <p className="mt-1 text-sm text-slate-600">{worker?.services && worker.services.length > 0 ? worker.services.slice(0,3).map(s => s.name).join(', ') : '—'}</p>
+              )}
               <p className="mt-2 text-sm text-slate-500">{stat.detail}</p>
               <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-sky-100 via-teal-100 to-amber-100" />
             </div>
